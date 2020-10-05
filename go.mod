@@ -1,4 +1,4 @@
-module github.com/KomGitHub/wallet
+module github.com/KomGitHub/wallet/v1
 
 go 1.15
 
