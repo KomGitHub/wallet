@@ -2,7 +2,7 @@ package wallet
 
 import (
 	"errors"
-	"github.com/KomGitHub/wallet/pkg/types"
+	"github.com/KomGitHub/wallet/v1/pkg/types"
 	"github.com/google/uuid"
 )
 
