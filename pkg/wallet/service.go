@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"errors"
+
 	"github.com/KomGitHub/wallet/v1/pkg/types"
 	"github.com/google/uuid"
 )
@@ -16,20 +17,6 @@ type Service struct {
 	nextAccountID int64
 	accounts      []*types.Account
 	payments      []*types.Payment
-}
-
-func RegisterAccount(service *Service, phone types.Phone) {
-	for _, account := range service.accounts {
-		if account.Phone == phone {
-			return
-		}
-	}
-	service.nextAccountID++
-	service.accounts = append(service.accounts, &types.Account{
-		ID:      service.nextAccountID,
-		Phone:   phone,
-		Balance: 0,
-	})
 }
 
 func (s *Service) RegisterAccount(phone types.Phone) (*types.Account, error) {
@@ -113,9 +100,9 @@ func (s *Service) FindAccountByID(accountID int64) (*types.Account, error) {
 }
 
 func (s *Service) FindPaymentByID(paymentID string) (*types.Payment, error) {
-	for _, pay := range s.payments {
-		if pay.ID == paymentID {
-			return pay, nil
+	for _, payment := range s.payments {
+		if payment.ID == paymentID {
+			return payment, nil
 		}
 	}
 	return nil, ErrPaymentNotFound
