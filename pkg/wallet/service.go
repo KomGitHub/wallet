@@ -127,14 +127,10 @@ func (s *Service) Repeat(paymentID string) (*types.Payment, error) {
 	if err != nil {
 		return nil, err
 	}
-	newPaymentID := uuid.New().String()
-	newPayment := &types.Payment{
-		ID:        newPaymentID,
-		AccountID: payment.AccountID,
-		Amount:    payment.Amount,
-		Category:  payment.Category,
-		Status:    payment.Status,
+	
+	newPayment, err := s.Pay(payment.AccountID, payment.Amount, payment.Category)
+	if err != nil {
+		return nil, err
 	}
-	s.payments = append(s.payments, newPayment)
 	return newPayment, nil
 }
