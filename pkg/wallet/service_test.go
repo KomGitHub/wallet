@@ -175,3 +175,33 @@ func TestService_FindPaymentByID_fail(t *testing.T) {
 		return
 	}
 }
+
+func TestService_Repeat_success(t *testing.T) {
+	s := newTestService()
+	account, _, err := s.addAccount(defaultTestAccount)
+	if err != nil {
+		t.Errorf("Repeat(): error = %v", err)
+		return
+	}
+
+	payment, err := s.Pay(account.ID, 1000_00, "auto")
+	if err != nil {
+		t.Errorf("Repeat(): can't create payment, error = %v", err)
+		return
+	}
+	_, err = s.Repeat(payment.ID)
+	if err != nil {
+		t.Errorf("Reject(): can't repeat payment, error = %v", err)
+		return
+	}
+}
+
+func TestService_Repeat_fail(t *testing.T) {
+	s := newTestService()
+	
+	_, err := s.Repeat(uuid.New().String())
+	if err == nil {
+		t.Errorf("Reject(): must return ErrPaymentNotFound, returned = %v", err)
+		return
+	}
+}
