@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"github.com/KomGitHub/wallet/v1/pkg/types"
 	"github.com/google/uuid"
+	"io"
+	"strings"
 )
 
 var ErrPhoneRegistered = errors.New("phone already registered")
@@ -202,5 +204,58 @@ func (s *Service) ExportToFile(path string) error {
 		log.Print(err)
 		return err
 	}
+	return nil
+}
+
+func (s *Service) ImportFromFile(path string) error {
+	file, err := os.Open(path)
+	if err != nil {
+		log.Print(err)
+		return err
+	}
+	defer func() {
+		if cerr := file.Close(); cerr != nil {
+			log.Print(cerr)
+		}
+	}()
+	content := make([]byte, 0)
+	buf := make([]byte, 4096)
+	for {
+		read, err := file.Read(buf)
+		if err == io.EOF {
+			content = append(content, buf[:read]...)
+			break
+		}
+		if err != nil {
+			log.Print(err)
+			return err
+		}
+		content = append(content, buf[:read]...)
+	}
+	data := string(content)
+	records := strings.Split(data, "|")
+	for _, record := range records {
+		if len(record) != 0 {
+			items := strings.Split(record, ";")
+			id, err := strconv.ParseInt(items[0], 10, 64)
+			if err != nil {
+				log.Print(err)
+				break
+			}
+			balance, err := strconv.ParseInt(items[2], 10, 64)
+			if err != nil {
+				log.Print(err)
+				break
+			}
+
+			account := &types.Account{
+				ID:      id,
+				Phone:   types.Phone(items[1]),
+				Balance: types.Money(balance),
+			}
+			s.accounts = append(s.accounts, account)
+		}
+	}
+
 	return nil
 }
