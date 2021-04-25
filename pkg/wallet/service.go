@@ -259,3 +259,79 @@ func (s *Service) ImportFromFile(path string) error {
 
 	return nil
 }
+
+func (s *Service) Export(dir string) (err error) {
+	if len(s.accounts) > 0 {
+		file, err := os.Create(dir + "/accounts.dump")
+		if err != nil {
+			return err
+		}
+		defer func() {
+			if cerr := file.Close(); cerr != nil {
+				if err == nil {
+					err = cerr
+				}
+			}
+		}()
+		var export string
+		for _, account := range s.accounts {
+			if len(export) != 0 {
+				export += "\n"
+			}
+			export += strconv.FormatInt(account.ID, 10) + ";" + string(account.Phone) + ";" + strconv.FormatInt(int64(account.Balance), 10)
+		}
+		_, err = file.Write([]byte(export))
+		if err != nil {
+			return err
+		}
+	}
+	if len(s.payments) > 0 {
+		file, err := os.Create(dir + "/payments.dump")
+		if err != nil {
+			return err
+		}
+		defer func() {
+			if cerr := file.Close(); cerr != nil {
+				if err == nil {
+					err = cerr
+				}
+			}
+		}()
+		var export string
+		for _, payment := range s.payments {
+			if len(export) != 0 {
+				export += "\n"
+			}
+			export += payment.ID + ";" + strconv.FormatInt(payment.AccountID, 10) + ";" + strconv.FormatInt(int64(payment.Amount), 10) + ";" + string(payment.Category) + ";" + string(payment.Status)
+		}
+		_, err = file.Write([]byte(export))
+		if err != nil {
+			return err
+		}
+	}
+	if len(s.favorites) > 0 {
+		file, err := os.Create(dir + "/favorites.dump")
+		if err != nil {
+			return err
+		}
+		defer func() {
+			if cerr := file.Close(); cerr != nil {
+				if err == nil {
+					err = cerr
+				}
+			}
+		}()
+		var export string
+		for _, favorite := range s.favorites {
+			if len(export) != 0 {
+				export += "\n"
+			}
+			export += favorite.ID + ";" + strconv.FormatInt(favorite.AccountID, 10) + ";" + string(favorite.Name) + ";" + strconv.FormatInt(int64(favorite.Amount), 10) + ";" + string(favorite.Category)
+		}
+		_, err = file.Write([]byte(export))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
