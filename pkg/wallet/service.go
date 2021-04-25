@@ -514,3 +514,60 @@ func (s *Service) ExportAccountHistory(accountID int64) ([]types.Payment, error)
 	}
 	return accPayments, nil
 }
+
+func (s *Service) HistoryToFiles(payments []types.Payment, dir string, records int) error {
+	if len(payments) > 0 {
+		count := 0
+		fileNo := 0
+		fileName := "/payments.dump"
+		var export string
+		for _, payment := range payments {
+			if len(export) != 0 {
+				export += "\n"
+			}
+			export += payment.ID + ";" + strconv.FormatInt(payment.AccountID, 10) + ";" + strconv.FormatInt(int64(payment.Amount), 10) + ";" + string(payment.Category) + ";" + string(payment.Status)
+			count++
+			if (count % records) == 0 {
+				fileNo = count / records
+				fileName = "/payments" + strconv.FormatInt(int64(fileNo), 10) + ".dump"
+				file, err := os.Create(dir + fileName)
+				if err != nil {
+					return err
+				}
+				defer func() {
+					if cerr := file.Close(); cerr != nil {
+						if err == nil {
+							err = cerr
+						}
+					}
+				}()
+				_, err = file.Write([]byte(export))
+				if err != nil {
+					return err
+				}
+				export = ""
+			}
+		}
+		if len(export) != 0 {
+			if fileNo != 0 {
+				fileName = "/payments" + strconv.FormatInt(int64(fileNo+1), 10) + ".dump"
+			}
+			file, err := os.Create(dir + fileName)
+			if err != nil {
+				return err
+			}
+			defer func() {
+				if cerr := file.Close(); cerr != nil {
+					if err == nil {
+						err = cerr
+					}
+				}
+			}()
+			_, err = file.Write([]byte(export))
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
