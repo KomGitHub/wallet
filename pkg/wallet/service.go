@@ -500,3 +500,17 @@ func (s *Service) Import(dir string) (err error) {
 	}
 	return nil
 }
+
+func (s *Service) ExportAccountHistory(accountID int64) ([]types.Payment, error) {
+	account, err := s.FindAccountByID(accountID)
+	if err != nil {
+		return nil, err
+	}
+	var accPayments []types.Payment
+	for _, payment := range s.payments {
+		if payment.AccountID == account.ID {
+			accPayments = append(accPayments, *payment)
+		}
+	}
+	return accPayments, nil
+}
