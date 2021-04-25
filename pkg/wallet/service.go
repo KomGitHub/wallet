@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"io"
 	"strings"
+	"bufio"
 )
 
 var ErrPhoneRegistered = errors.New("phone already registered")
@@ -331,6 +332,170 @@ func (s *Service) Export(dir string) (err error) {
 		_, err = file.Write([]byte(export))
 		if err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+func (s *Service) Import(dir string) (err error) {
+	filename := dir + "/accounts.dump"
+	if _, err := os.Stat(filename); !os.IsNotExist(err) {
+		file, err := os.Open(filename)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			if cerr := file.Close(); cerr != nil {
+				if err == nil {
+					err = cerr
+				}
+			}
+		}()
+		reader := bufio.NewReader(file)
+		for {
+			line, err := reader.ReadString('\n')
+			trimLine := strings.TrimSuffix(line, "\n")
+			if len(line) != 0 {
+				items := strings.Split(trimLine, ";")
+				id, err := strconv.ParseInt(items[0], 10, 64)
+				if err != nil {
+					log.Print(err)
+					break
+				}
+				balance, err := strconv.ParseInt(items[2], 10, 64)
+				if err != nil {
+					log.Print(err)
+					break
+				}
+				account, err := s.FindAccountByID(id)
+				if err != nil {
+					s.nextAccountID = id
+					newAccount := &types.Account{
+						ID:      id,
+						Phone:   types.Phone(items[1]),
+						Balance: types.Money(balance),
+					}
+					s.accounts = append(s.accounts, newAccount)
+				} else {
+					account.Phone = types.Phone(items[1])
+					account.Balance = types.Money(balance)
+				}
+			}
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				log.Print(err)
+				return err
+			}
+		}
+	}
+	filename = dir + "/payments.dump"
+	if _, err := os.Stat(filename); !os.IsNotExist(err) {
+		file, err := os.Open(filename)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			if cerr := file.Close(); cerr != nil {
+				if err == nil {
+					err = cerr
+				}
+			}
+		}()
+		reader := bufio.NewReader(file)
+		for {
+			line, err := reader.ReadString('\n')
+			trimLine := strings.TrimSuffix(line, "\n")
+			if len(line) != 0 {
+				items := strings.Split(trimLine, ";")
+				accID, err := strconv.ParseInt(items[1], 10, 64)
+				if err != nil {
+					log.Print(err)
+					break
+				}
+				amount, err := strconv.ParseInt(items[2], 10, 64)
+				if err != nil {
+					log.Print(err)
+					break
+				}
+				payment, err := s.FindPaymentByID(items[0])
+				if err != nil {
+					newPayment := &types.Payment{
+						ID:        items[0],
+						AccountID: accID,
+						Amount:    types.Money(amount),
+						Category:  types.PaymentCategory(items[3]),
+						Status:    types.PaymentStatus(items[4]),
+					}
+					s.payments = append(s.payments, newPayment)
+				} else {
+					payment.AccountID = accID
+					payment.Amount = types.Money(amount)
+					payment.Category = types.PaymentCategory(items[3])
+					payment.Status = types.PaymentStatus(items[4])
+				}
+			}
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				return err
+			}
+		}
+	}
+	filename = dir + "/favorites.dump"
+	if _, err := os.Stat(filename); !os.IsNotExist(err) {
+		file, err := os.Open(filename)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			if cerr := file.Close(); cerr != nil {
+				if err == nil {
+					err = cerr
+				}
+			}
+		}()
+		reader := bufio.NewReader(file)
+		for {
+			line, err := reader.ReadString('\n')
+			trimLine := strings.TrimSuffix(line, "\n")
+			if len(line) != 0 {
+				items := strings.Split(trimLine, ";")
+				accID, err := strconv.ParseInt(items[1], 10, 64)
+				if err != nil {
+					log.Print(err)
+					break
+				}
+				amount, err := strconv.ParseInt(items[3], 10, 64)
+				if err != nil {
+					log.Print(err)
+					break
+				}
+				favorite, err := s.FindFavoriteByID(items[0])
+				if err != nil {
+					newFavorite := &types.Favorite{
+						ID:        items[0],
+						AccountID: accID,
+						Name:      items[2],
+						Amount:    types.Money(amount),
+						Category:  types.PaymentCategory(items[4]),
+					}
+					s.favorites = append(s.favorites, newFavorite)
+				} else {
+					favorite.AccountID = accID
+					favorite.Amount = types.Money(amount)
+					favorite.Name = items[2]
+					favorite.Category = types.PaymentCategory(items[4])
+				}
+			}
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
