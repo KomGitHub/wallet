@@ -10,6 +10,7 @@ import (
 	"io"
 	"strings"
 	"bufio"
+	"sync"
 )
 
 var ErrPhoneRegistered = errors.New("phone already registered")
@@ -570,4 +571,42 @@ func (s *Service) HistoryToFiles(payments []types.Payment, dir string, records i
 		}
 	}
 	return nil
+}
+
+func (s *Service) SumPayments(goroutines int) types.Money {
+	wg := sync.WaitGroup{}
+	mu := sync.Mutex{}
+	sum := types.Money(0)
+	if goroutines < 2 {
+		for _, payment := range s.payments {
+			sum += payment.Amount
+		}
+		return sum
+	}
+	paymentsLen := len(s.payments)
+	modulo := paymentsLen % goroutines
+	sliceLen := paymentsLen / goroutines
+	if modulo > 0 {
+		sliceLen += 1
+	}
+	for i := 1; i <= goroutines; i++ {
+		wg.Add(1)
+		go func(val int) {
+			defer wg.Done()
+			sliceSum := types.Money(0)
+			first := (val - 1) * sliceLen
+			last := val * sliceLen
+			if last > paymentsLen {
+				last = paymentsLen
+			}
+			for j := first; j < last; j++ {
+				sliceSum += s.payments[j].Amount
+			}
+			mu.Lock()
+			defer mu.Unlock()
+			sum += sliceSum
+		}(i)
+	}
+	wg.Wait()
+	return sum
 }

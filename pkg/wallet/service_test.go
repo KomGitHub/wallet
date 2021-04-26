@@ -272,3 +272,23 @@ func TestService_PayFromFavorite_fail(t *testing.T) {
 		return
 	}
 }
+
+func BenchmarkSumPayments(b *testing.B) {
+	s := newTestService()
+	
+	_, _, err := s.addAccount(defaultTestAccount)
+	if err != nil {
+		b.Errorf("SumPayments(): error = %v", err)
+		return
+	}
+	want := types.Money(2_000_00)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		result := s.SumPayments(4)
+		b.StopTimer()
+		if result != want {
+			b.Fatalf("invalid result, got %v, want %v", result, want)
+		}
+		b.StartTimer()
+	}
+}
