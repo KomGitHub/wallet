@@ -6,6 +6,7 @@ import (
 	"testing"
 	"github.com/KomGitHub/wallet/v1/pkg/types"
 	"github.com/google/uuid"
+	"os"
 )
 
 type testService struct {
@@ -269,6 +270,119 @@ func TestService_PayFromFavorite_fail(t *testing.T) {
 	_, err := s.PayFromFavorite(uuid.New().String())
 	if err == nil {
 		t.Errorf("PayFromFavorite(): must return ErrFavoriteNotFound, returned = %v", err)
+		return
+	}
+}
+
+func TestService_ExportToFile_success(t *testing.T) {
+	s := newTestService()
+	
+	_, _, err := s.addAccount(defaultTestAccount)
+	if err != nil {
+		t.Errorf("ExportToFile(): error = %v", err)
+		return
+	}
+	err = s.ExportToFile("accounts.txt")
+	if err != nil {
+		t.Errorf("ExportToFile(): error = %v", err)
+		return
+	}
+}
+
+func TestService_Export_success(t *testing.T) {
+	s := newTestService()
+	
+	_, _, err := s.addAccount(defaultTestAccount)
+	if err != nil {
+		t.Errorf("Export(): error = %v", err)
+		return
+	}
+
+	dir, err := os.Getwd()
+	if err != nil {
+		t.Errorf("Export(): error = %v", err)
+		return
+	}
+
+	err = s.Export(dir)
+	if err != nil {
+		t.Errorf("Export(): error = %v", err)
+		return
+	}
+}
+
+func TestService_ImportFromFile_success(t *testing.T) {
+	s := newTestService()
+	
+	_, _, err := s.addAccount(defaultTestAccount)
+	if err != nil {
+		t.Errorf("ImportFromFile(): error = %v", err)
+		return
+	}
+	err = s.ExportToFile("accounts.txt")
+	if err != nil {
+		t.Errorf("ImportFromFile(): error = %v", err)
+		return
+	}
+	err = s.ImportFromFile("accounts.txt")
+	if err != nil {
+		t.Errorf("ImportFromFile(): error = %v", err)
+		return
+	}
+}
+
+func TestService_Import_success(t *testing.T) {
+	s := newTestService()
+	
+	dir, err := os.Getwd()
+	if err != nil {
+		t.Errorf("Import(): error = %v", err)
+		return
+	}
+
+	err = s.Import(dir)
+	if err != nil {
+		t.Errorf("Import(): error = %v", err)
+		return
+	}
+}
+
+func TestService_ExportAccountHistory_success(t *testing.T) {
+	s := newTestService()
+	
+	_, _, err := s.addAccount(defaultTestAccount)
+	if err != nil {
+		t.Errorf("ExportAccountHistory(): error = %v", err)
+		return
+	}
+	_, err = s.ExportAccountHistory(1)
+	if err != nil {
+		t.Errorf("ExportAccountHistory(): error = %v", err)
+		return
+	}
+}
+
+func TestService_HistoryToFiles_success(t *testing.T) {
+	s := newTestService()
+	
+	_, _, err := s.addAccount(defaultTestAccount)
+	if err != nil {
+		t.Errorf("HistoryToFiles(): error = %v", err)
+		return
+	}
+	payments, err := s.ExportAccountHistory(1)
+	if err != nil {
+		t.Errorf("HistoryToFiles(): error = %v", err)
+		return
+	}
+	dir, err := os.Getwd()
+	if err != nil {
+		t.Errorf("HistoryToFiles(): error = %v", err)
+		return
+	}
+	err = s.HistoryToFiles(payments, dir, 2)
+	if err != nil {
+		t.Errorf("HistoryToFiles(): error = %v", err)
 		return
 	}
 }

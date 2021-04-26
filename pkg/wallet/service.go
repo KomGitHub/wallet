@@ -2,14 +2,14 @@ package wallet
 
 import (
 	"errors"
-	//"log"
-	//"os"
-	//"strconv"
+	"log"
+	"os"
+	"strconv"
 	"github.com/KomGitHub/wallet/v1/pkg/types"
 	"github.com/google/uuid"
-	//"io"
-	//"strings"
-	//"bufio"
+	"io"
+	"strings"
+	"bufio"
 	"sync"
 )
 
@@ -183,7 +183,7 @@ func (s *Service) PayFromFavorite(favoriteID string) (*types.Payment, error) {
 	return payment, nil
 }
 
-/*func (s *Service) ExportToFile(path string) error {
+func (s *Service) ExportToFile(path string) error {
 	file, err := os.Create(path)
 	if err != nil {
 		log.Print(err)
@@ -571,7 +571,7 @@ func (s *Service) HistoryToFiles(payments []types.Payment, dir string, records i
 		}
 	}
 	return nil
-}*/
+}
 
 func (s *Service) SumPayments(goroutines int) types.Money {
 	wg := sync.WaitGroup{}
