@@ -281,7 +281,7 @@ func BenchmarkSumPayments(b *testing.B) {
 		b.Errorf("SumPayments(): error = %v", err)
 		return
 	}
-	want := types.Money(2_000_00)
+	want := types.Money(1_000_00)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		result := s.SumPayments(4)
