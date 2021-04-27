@@ -610,3 +610,50 @@ func (s *Service) SumPayments(goroutines int) types.Money {
 	wg.Wait()
 	return sum
 }
+
+func (s *Service) FilterPayments(accountID int64, goroutines int) ([]types.Payment, error) {
+	wg := sync.WaitGroup{}
+	mu := sync.Mutex{}
+	payments := []types.Payment{}
+	_, err := s.FindAccountByID(accountID)
+	if err != nil {
+		log.Print(err)
+		return nil, err
+	}
+	if goroutines < 2 {
+		for _, payment := range s.payments {
+			if payment.AccountID == accountID {
+				payments = append(payments, *payment)
+			}
+		}
+		return payments, nil
+	}
+	paymentsLen := len(s.payments)
+	modulo := paymentsLen % goroutines
+	sliceLen := paymentsLen / goroutines
+	if modulo > 0 {
+		sliceLen += 1
+	}
+	for i := 1; i <= goroutines; i++ {
+		wg.Add(1)
+		go func(val int) {
+			defer wg.Done()
+			subPayments := []types.Payment{}
+			first := (val - 1) * sliceLen
+			last := val * sliceLen
+			if last > paymentsLen {
+				last = paymentsLen
+			}
+			for j := first; j < last; j++ {
+				if s.payments[j].AccountID == accountID {
+					subPayments = append(subPayments, *s.payments[j])
+				}
+			}
+			mu.Lock()
+			defer mu.Unlock()
+			payments = append(payments, subPayments...)
+		}(i)
+	}
+	wg.Wait()
+	return payments, nil
+}
