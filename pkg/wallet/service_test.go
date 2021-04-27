@@ -433,3 +433,64 @@ func BenchmarkFilterPayments(b *testing.B) {
 		b.StartTimer()
 	}
 }
+
+func BenchmarkFilterPaymentsByFn(b *testing.B) {
+	s := newTestService()
+	
+	_, _, err := s.addAccount(defaultTestAccount)
+	if err != nil {
+		b.Errorf("FilterPaymentsByFn(): error = %v", err)
+		return
+	}
+	want := []types.Payment{}
+	for _, payment := range s.payments {
+		want = append(want, *payment)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		result, err := s.FilterPaymentsByFn(func(payment types.Payment) bool {
+			return payment.AccountID == 1
+		}, 4)
+		b.StopTimer()
+		if err != nil {
+			b.Errorf("FilterPaymentsByFn(): error = %v", err)
+			return
+		}
+		if len(result) != len(want) {
+			b.Fatalf("invalid result, got %v, want %v", result, want)
+		}
+		b.StartTimer()
+	}
+}
+
+func TestService_SumPayments(t *testing.T) {
+	s := newTestService()
+	
+	_, _, err := s.addAccount(defaultTestAccount)
+	if err != nil {
+		t.Errorf("SumPayments(): error = %v", err)
+		return
+	}
+
+	sum := types.Money(0)
+	for _, payment := range s.payments {
+		sum += payment.Amount
+	}
+
+	goroutines := 1
+
+	sumFN := s.SumPayments(goroutines)
+	
+	if sum != sumFN {
+		t.Errorf("SumPayments(): sum (%v) does not equal sumFN (%v)", sum, sumFN)
+		return
+	}
+	
+	goroutines = 2
+	sumFN = s.SumPayments(goroutines)
+	
+	if sum != sumFN {
+		t.Errorf("SumPayments(): sum (%v) does not equal sumFN (%v)", sum, sumFN)
+		return
+	}
+}
