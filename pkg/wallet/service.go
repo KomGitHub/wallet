@@ -27,6 +27,11 @@ type Service struct {
 	favorites []*types.Favorite
 }
 
+type Progress struct {
+	Part int
+	Result types.Money
+}
+
 func (s *Service) RegisterAccount(phone types.Phone) (*types.Account, error) {
 	for _, account := range s.accounts {
 		if account.Phone == phone {
@@ -699,4 +704,42 @@ func (s *Service) FilterPaymentsByFn(
 	}
 	wg.Wait()
 	return payments, nil
+}
+
+func (s *Service) SumPaymentsWithProgress() <-chan Progress {
+	size := 100_0000
+
+	money := []types.Money{}
+	for _, payment := range s.payments {
+		money = append(money, payment.Amount)
+	}
+
+	wg := sync.WaitGroup{}
+	goroutines := (len(money) + 1) / size
+	if goroutines <= 0 {
+		goroutines = 1
+	}
+	ch := make(chan Progress)
+	for i := 0; i < goroutines; i++ {
+		wg.Add(1)
+		go func(ch chan<- Progress, money []types.Money) {
+			sum := 0
+			defer wg.Done()
+			for _, val := range money {
+				sum += int(val)
+
+			}
+			ch <- Progress{
+				Part:   len(money),
+				Result: types.Money(sum),
+			}
+		}(ch, money)
+	}
+
+	go func() {
+		defer close(ch)
+		wg.Wait()
+	}()
+
+	return ch
 }

@@ -494,3 +494,31 @@ func TestService_SumPayments(t *testing.T) {
 		return
 	}
 }
+
+func BenchmarkSumPaymentsWithProgress(b *testing.B) {
+	s := newTestService()
+
+	_, _, err := s.addAccount(defaultTestAccount)
+	if err != nil {
+		b.Errorf("SumPaymentsWithProgress(): error = %v", err)
+		return
+	}
+
+	sum := types.Money(0)
+	for _, payment := range s.payments {
+		sum += payment.Amount
+	}	
+
+	ch := s.SumPaymentsWithProgress()
+
+	progress, ok := <-ch
+	if !ok {
+		b.Errorf("SumPaymentsWithProgress(): error!")
+	}
+
+	if sum != progress.Result {
+		b.Errorf("SumPaymentsWithProgress(): sum (%v) does not equal progress (%v)", sum, progress)
+		return
+	}
+
+}
